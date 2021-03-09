@@ -16,8 +16,23 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   Dish.init({
-    dish_name: DataTypes.STRING,
-    price: DataTypes.DOUBLE,
+    dish_name: {
+      type: DataTypes.STRING,
+      validate: {
+        notEmpty: {
+          msg: 'Dish name cannot be empty'
+        }
+      }
+    },
+    price: {
+      type: DataTypes.DOUBLE,
+      validate: {
+        min: {
+          args: 500,
+          msg: 'Minimum price IDR 500'
+        }
+      }
+    },
     vendor_id: DataTypes.INTEGER
   }, {
     sequelize,

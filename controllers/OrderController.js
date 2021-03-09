@@ -40,16 +40,16 @@ module.exports = class OrderController {
 
       if (!created) {
         const [ _, [updatedOrder] ] = await Order.update(
-          {quantity: +createdOrFoundOrder.quantity + order.quantity},
+          {
+            quantity: +createdOrFoundOrder.quantity + order.quantity
+          },
           { 
             where: { user_id: order.user_id, dish_id: order.dish_id},
             returning: true
           }
         )
         res.status(200).json(updatedOrder)
-      } else {
-        res.status(201).json(createdOrFoundOrder)
-      }
+      } else res.status(201).json(createdOrFoundOrder)
     } catch (error) {
       console.log(error)
       next(error)

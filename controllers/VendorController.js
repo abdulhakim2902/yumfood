@@ -1,23 +1,27 @@
-const { Vendor, Dish, Tag } = require('../models')
+const { Vendor, Dish, Tag, VendorTag } = require('../models')
+const { Op } = require('sequelize');
 
 module.exports = class VendorController {
   static async getVendors (req, res, next) {
     const { tags } = req.query
     
     try {
-      if (!tags) {
-        const vendors = await Vendor.findAll()
+      let vendors
 
-        res.status(200).json(vendors)
-      } else {
-        const vendors = await Tag.findAll({
-          where: {
-
+      if (!tags) vendors = await Vendor.findAll()
+      else {
+        vendors = await Vendor.findAll({
+          include: {
+            model: Tag,
+            where: {
+              tag_name: {
+                [Op.or]: tags
+              }
+            }
           }
         })
-        res.send(tags)
       }
-
+      res.status(200).json(vendors)
     } catch (error) {
       next(error)
     }
@@ -42,14 +46,27 @@ module.exports = class VendorController {
   static async addVendor (req, res, next) {
     const vendor = {
       name: req.body.name,
-      logo: req.body.logo,
-      tags: req.body.tags
+      logo: req.body.logo
     }
-
+    const { tag_ids } = req.body
     try {
       const addedVendor = await Vendor.create(vendor)
+
       res.status(201).json(addedVendor)
+
+      if (Array.isArray(tag_ids) && tag_ids.length > 0) {
+        
+        const vendorsTags = tag_ids .map(e => {
+          return {
+            vendor_id: addedVendor.id,
+            tag_id: e
+          }
+        })
+        await VendorTag.bulkCreate(vendorsTags)
+      }
+
     } catch (error) {
+      console.log(error)
       next(error)
     }
   }
@@ -58,9 +75,9 @@ module.exports = class VendorController {
     const { id } = req.params
     const vendor = {
       name: req.body.name,
-      logo: req.body.logo,
-      tags: req.body.tags
+      logo: req.body.logo
     }
+    const { tag_ids } = req.body
 
     try {
       const [ updated, [ updatedVendor ] ] = await Vendor.update(vendor, {
@@ -69,7 +86,25 @@ module.exports = class VendorController {
       })
 
       if (!updated) next({ name: 'VendorNotFound' })
-      else res.status(200).json(updatedVendor)
+      else {
+
+        res.status(200).json(updatedVendor)
+
+        if (Array.isArray(tag_ids) && tag_ids.length > 0) {
+          tag_ids.forEach(async e => {
+            const where = {
+              vendor_id: updatedVendor.id,
+              tag_id: e
+            }
+
+            await VendorTag.findOrCreate({
+              where,
+              defaults: where
+            })
+          })
+        }
+
+      }
     } catch (error) {
       next(error)
     }

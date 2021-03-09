@@ -11,7 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Vendor.hasMany(models.Dish, { foreignKey: 'vendor_id' })
+      Vendor.hasMany(models.Dish, { foreignKey: 'user_id' })
+      Vendor.belongsToMany(models.Tag, { foreignKey: 'vendor_id', through: 'VendorTags'})
     }
   };
   Vendor.init({
@@ -21,6 +22,9 @@ module.exports = (sequelize, DataTypes) => {
         len: {
           args: [4, 128],
           msg: 'Vendor name must be less than 128 characters and more than 4 characters'
+        },
+        notEmpty: {
+          msg: 'Vendor name cannot be empty'
         }
       }
     },
